@@ -143,18 +143,24 @@
     .silenda-password-btn.submit {
       background: linear-gradient(135deg, var(--silenda-primary), var(--silenda-accent));
       color: white;
-    }   .silenda-password-btn.cancel {
+    }
+    .silenda-password-btn.cancel {
       background: var(--silenda-secondary);
       color: var(--silenda-dark);
-    } .silenda-password-btn:hover {transform: translateY(-2px);
-    } .silenda-password-error {
+    }
+    .silenda-password-btn:hover {
+      transform: translateY(-2px);
+    }
+    .silenda-password-error {
       color: #dc3545;
       font-size: 14px;
       margin-top: 10px;
       display: none;
-    } .silenda-password-error.show {
+    }
+    .silenda-password-error.show {
       display: block;
-    }  .silenda-booking-overlay {
+    }
+    .silenda-booking-overlay {
       position: fixed;
       top: 0;
       left: 0;
@@ -179,7 +185,8 @@
       box-shadow: 0 10px 50px rgba(0,0,0,0.3);
       overflow: hidden;
       display: flex;
-      flex-direction: column; }
+      flex-direction: column;
+    }
     .silenda-modal-header {
       background: linear-gradient(135deg, var(--silenda-primary), var(--silenda-accent));
       padding: 20px 30px;
@@ -208,24 +215,28 @@
     .silenda-close-btn:hover {
       background: rgba(255, 255, 255, 0.3);
       transform: rotate(90deg);
- }
+    }
     .silenda-close-btn svg {
       width: 20px;
       height: 20px;
-      fill: white;   }
+      fill: white;
+    }
     .silenda-modal-body {
       padding: 30px;
       overflow-y: auto;
-      flex: 1;  }
+      flex: 1;
+    }
     .silenda-steps {
       display: flex;
       justify-content: space-between;
       margin-bottom: 30px;
-      padding: 0 20px;  }
+      padding: 0 20px;
+    }
     .silenda-step {
       flex: 1;
       text-align: center;
-      position: relative; }
+      position: relative;
+    }
     .silenda-step::before {
       content: '';
       position: absolute;
@@ -234,7 +245,8 @@
       width: 100%;
       height: 2px;
       background: var(--silenda-secondary);
-      z-index: -1; }
+      z-index: -1;
+    }
     .silenda-step:first-child::before {
       display: none;
     }
@@ -777,12 +789,15 @@
   </style>
 </head>
 <body>
+
   <button class="silenda-booking-trigger" id="silendaTrigger">
     <svg viewBox="0 0 24 24">
       <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/>
     </svg>
   </button>
+
   <div class="silenda-widget-popup" id="silendaWidgetPopup">Plan hier je afspraak!</div>
+
   <div class="silenda-password-overlay" id="silendaPasswordOverlay">
     <div class="silenda-password-box">
       <h3>Admin Toegang</h3>
@@ -797,6 +812,7 @@
       </div>
     </div>
   </div>
+
   <div class="silenda-booking-overlay" id="silendaAdminOverlay">
     <div class="silenda-booking-modal">
       <div class="silenda-modal-header">
@@ -860,6 +876,7 @@
       </div>
     </div>
   </div>
+
   <div class="silenda-booking-overlay" id="silendaOverlay">
     <div class="silenda-booking-modal">
       <div class="silenda-modal-header">
@@ -897,9 +914,11 @@
       </div>
     </div>
   </div>
+
   <script>
   (function() {
     'use strict';
+
     // JE EMAILJS GEGEVENS - AL INGEVULD!
     const EMAILJS_PUBLIC_KEY = "sh1cSSan5VAzDmHAZ";
     const EMAILJS_SERVICE_ID = "service_djwxgvn";
@@ -908,18 +927,21 @@
 
     // GOOGLE SHEETS WEB APP URL
     const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbyzU1Ihb_-jkUYAmX5oRlmAtbSs9GlZsviUHEgI-jCDyrrAbp0wbU7wnJXPkGKP-q1Y/exec";
+
     // MOLLIE BETAALLINKS
     const MOLLIE_LINKS = {
       2: 'https://payment-links.mollie.com/payment/YwR7fRhdb9LruYLuwrmwG', // Gesprek telefonisch of via Zoom
       3: 'https://payment-links.mollie.com/payment/9AdN5GLi5xUjMNUzuTTFd'  // Gesprek op live locatie
     };
- const SECRET_TRIGGER = 'theo';
+
+    const SECRET_TRIGGER = 'theo';
     const SECRET_PASSWORD = 'mama123';
+
     const CONFIG = {
       businessEmail: 'Info.silenda@gmail.com',
       minAdvanceHours: 48,
       monthsAhead: 3,
-      termsUrl: 'https://cdn.shopify.com/s/files/1/0914/8973/0943/files/Silenda_algemene_voorwaarden.pdf?v=1763975253',
+      termsUrl: 'https://silenda.nl/algemene-voorwaarden',
       services: [
         { id: 1, name: 'Kennismaken telefonisch of via Zoom', duration: 20, breakAfter: 40, price: 0, shopifyId: '12345' },
         { id: 2, name: 'Gesprek telefonisch of via Zoom', duration: 60, breakAfter: 60, price: 58, shopifyId: '12346' },
@@ -945,18 +967,18 @@
     }
     loadScheduleSettings();
 
-    let app = {
-      step: 1,
-      service: null,
-      date: null,
-      time: null,
-      currentMonth: new Date(),
-      customer: {},
-      agreedToTerms: false,
+    let app = { 
+      step: 1, 
+      service: null, 
+      date: null, 
+      time: null, 
+      currentMonth: new Date(), 
+      customer: {}, 
+      agreedToTerms: false, 
       bookedSlots: [],
       blockedSlots: []
     };
-   
+    
     const el = {
       trigger: document.getElementById('silendaTrigger'),
       overlay: document.getElementById('silendaOverlay'),
@@ -1022,7 +1044,7 @@ document.getElementById('adminSunday').checked = scheduleSettings.workingDays[0]
       }
       let html = '';
 scheduleSettings.blockedDates.forEach(date => {
-        html += <div class="silenda-blocked-date-tag"><span>${formatDate(date)}</span><button onclick="window.silendaRemoveBlockedDate('${date}')">×</button></div>;
+        html += `<div class="silenda-blocked-date-tag"><span>${formatDate(date)}</span><button onclick="window.silendaRemoveBlockedDate('${date}')">×</button></div>`;
       });
       container.innerHTML = html;
     }
@@ -1064,11 +1086,11 @@ scheduleSettings.workingDays[0] = document.getElementById('adminSunday').checked
     el.overlay.onclick = e => { if (e.target === el.overlay) closeModal(); };
     el.back.onclick = e => { e.preventDefault(); if (app.step > 1) { app.step--; render(); } };
     el.next.onclick = e => { e.preventDefault(); if (app.step < 4) { app.step++; render(); } else processBooking(); };
-  function openModal() {
-el.overlay.classList.add('active');
-   document.body.style.overflow = 'hidden';
-      loadBookedSlots();
-      render();
+  function openModal() { 
+el.overlay.classList.add('active'); 
+   document.body.style.overflow = 'hidden'; 
+      loadBookedSlots(); 
+      render(); 
     }
     function closeModal() { el.overlay.classList.remove('active'); document.body.style.overflow = ''; }
    function getMinDate() { const d = new Date(); d.setHours(d.getHours() + CONFIG.minAdvanceHours); return d; }
@@ -1083,17 +1105,17 @@ el.overlay.classList.add('active');
       const d = new Date(dateStr + 'T00:00:00');
       const days = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
       const months = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
-      return ${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()};
+      return `${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()}`;
     }
     function generateTimeSlots() {
       const slots = [], [sh, sm] = CONFIG.workHours.start.split(':').map(Number), [eh, em] = CONFIG.workHours.end.split(':').map(Number);
       let cur = sh * 60 + sm, end = eh * 60 + em;
-      while (cur < end) { const h = Math.floor(cur/60), m = cur%60; slots.push(${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}); cur += CONFIG.workHours.slotInterval; }
+      while (cur < end) { const h = Math.floor(cur/60), m = cur%60; slots.push(`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`); cur += CONFIG.workHours.slotInterval; }
       return slots;
     }
        function isTimeSlotAvailable(date, time) {
       if (!app.service) return false;
-          const isBlocked = app.blockedSlots.some(blocked =>
+          const isBlocked = app.blockedSlots.some(blocked => 
         blocked.date === date && blocked.time === time
       );
          if (isBlocked) return false;
@@ -1107,7 +1129,7 @@ el.overlay.classList.add('active');
       while (check < slotMin + total) {
         const ch = Math.floor(check / 60);
         const cm = check % 60;
-        const checkStr = ${String(ch).padStart(2,'0')}:${String(cm).padStart(2,'0')};
+        const checkStr = `${String(ch).padStart(2,'0')}:${String(cm).padStart(2,'0')}`;
            const isCheckBlocked = app.blockedSlots.some(blocked =>
           blocked.date === date && blocked.time === checkStr
         );
@@ -1162,7 +1184,7 @@ document.querySelectorAll('.silenda-step').forEach((s, i) => {
           <div class="silenda-service-name">${s.name}</div>
           <div class="silenda-service-duration">⏱️ ${s.duration} minuten</div>
           <div class="silenda-service-price">€${s.price.toFixed(2)}</div>
-          ${s.note ? <div class="silenda-service-note">${s.note}</div> : ''}
+          ${s.note ? `<div class="silenda-service-note">${s.note}</div>` : ''}
         </div>`;
       });
       h += '</div>';
@@ -1188,19 +1210,19 @@ document.querySelectorAll('.silenda-step').forEach((s, i) => {
           <div class="silenda-weekday">Wo</div><div class="silenda-weekday">Do</div><div class="silenda-weekday">Vr</div><div class="silenda-weekday">Za</div>
         </div>
         <div class="silenda-days">`;
-      for (let i = firstDayOfWeek - 1; i >= 0; i--) h += <div class="silenda-day other-month">${daysInPrevMonth - i}</div>;
+      for (let i = firstDayOfWeek - 1; i >= 0; i--) h += `<div class="silenda-day other-month">${daysInPrevMonth - i}</div>`;
       for (let i = 1; i <= daysInMonth; i++) {
-        const dateStr = ${year}-${String(month + 1).padStart(2,'0')}-${String(i).padStart(2,'0')};
+        const dateStr = `${year}-${String(month + 1).padStart(2,'0')}-${String(i).padStart(2,'0')}`;
         const checkDate = new Date(year, month, i), isToday = checkDate.getTime() === today.getTime();
         const available = isDateAvailable(dateStr), sel = app.date === dateStr;
         let classes = 'silenda-day';
         if (!available) classes += ' disabled';
         if (isToday) classes += ' today';
         if (sel) classes += ' selected';
-        h += <div class="${classes}" data-date="${dateStr}">${i}</div>;
+        h += `<div class="${classes}" data-date="${dateStr}">${i}</div>`;
       }
       const totalCells = firstDayOfWeek + daysInMonth, remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
-      for (let i = 1; i <= remaining; i++) h += <div class="silenda-day other-month">${i}</div>;
+      for (let i = 1; i <= remaining; i++) h += `<div class="silenda-day other-month">${i}</div>`;
       h += '</div></div>';
   if (app.date) {
         h += '<div class="silenda-timeslots">';
@@ -1209,10 +1231,10 @@ document.querySelectorAll('.silenda-step').forEach((s, i) => {
         const sel = app.time === t;
           let classes = 'silenda-timeslot';
           let title = '';
-         
+          
           if (!available) {
             classes += ' disabled';
-            const blockedInfo = app.blockedSlots.find(blocked =>
+            const blockedInfo = app.blockedSlots.find(blocked => 
               blocked.date === app.date && blocked.time === t
             );
             if (blockedInfo) {
@@ -1222,7 +1244,7 @@ document.querySelectorAll('.silenda-step').forEach((s, i) => {
             }
           }
           if (sel) classes += ' selected';
-                    h += <div class="${classes}" data-time="${t}" ${title ? `title="${title}" : ''}>${t}</div>`;
+                    h += `<div class="${classes}" data-time="${t}" ${title ? `title="${title}"` : ''}>${t}</div>`;
         });
         h += '</div>';
       }
@@ -1296,7 +1318,7 @@ document.getElementById('silendaEmail').oninput = e => { app.customer.email = e.
 document.getElementById('silendaTerms').onchange = function() { app.agreedToTerms = this.checked; updateButtons(); };
     }
         function processBooking() {
-      el.next.disabled = true;
+      el.next.disabled = true; 
       el.next.textContent = 'Bezig met verwerken...';
             const bookingData = {
         service: app.service.name,
@@ -1305,7 +1327,7 @@ document.getElementById('silendaTerms').onchange = function() { app.agreedToTerm
         price: app.service.price,
         date: app.date,
         time: app.time,
-        name: ${app.customer.firstName} ${app.customer.lastName},
+        name: `${app.customer.firstName} ${app.customer.lastName}`,
         email: app.customer.email,
         phone: app.customer.phone || '',
         notes: app.customer.notes || '',
@@ -1355,8 +1377,8 @@ saveBookingToSheets(bookingData);
         service_name: bookingData.service,
         appointment_date: formatDate(bookingData.date),
         appointment_time: bookingData.time,
-        duration: ${bookingData.duration} minuten,
-        price: €${bookingData.price.toFixed(2)},      business_email: CONFIG.businessEmail
+        duration: `${bookingData.duration} minuten`,
+        price: `€${bookingData.price.toFixed(2)}`,      business_email: CONFIG.businessEmail
       }).then(() => console.log('Bevestigingsmail naar klant verzonden'))
         .catch(err => console.error('Fout bij klantmail:', err));
 emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_ADMIN_TEMPLATE_ID, {
@@ -1367,8 +1389,8 @@ emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_ADMIN_TEMPLATE_ID, {
         service_name: bookingData.service,
         appointment_date: formatDate(bookingData.date),
         appointment_time: bookingData.time,
-        duration: ${bookingData.duration} minuten,
-        price: €${bookingData.price.toFixed(2)},     notes: bookingData.notes || "Geen opmerkingen"
+        duration: `${bookingData.duration} minuten`,
+        price: `€${bookingData.price.toFixed(2)}`,     notes: bookingData.notes || "Geen opmerkingen"
       }).then(() => console.log('Melding naar Silenda verzonden'))
         .catch(err => console.error('Fout bij admin mail:', err));
     }
@@ -1387,14 +1409,14 @@ emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_ADMIN_TEMPLATE_ID, {
       el.next.onclick = e => { e.preventDefault(); closeModal(); resetApp(); };
     }
        function resetApp() {
-      app = {
-        step: 1,
-        service: null,
-        date: null,
-        time: null,
-        currentMonth: new Date(),
-        customer: {},
-        agreedToTerms: false,
+      app = { 
+        step: 1, 
+        service: null, 
+        date: null, 
+        time: null, 
+        currentMonth: new Date(), 
+        customer: {}, 
+        agreedToTerms: false, 
         bookedSlots: app.bookedSlots,
         blockedSlots: app.blockedSlots
       };
