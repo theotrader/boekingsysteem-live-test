@@ -1,0 +1,1406 @@
+<!DOCTYPE html>
+<html lang="nl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Silenda Booking Widget</title>
+
+  <!-- EMAILJS SDK -->
+  <script type="text/javascript" src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+   
+    :root {
+      --silenda-primary: #f4a4b4;
+      --silenda-secondary: #e8d5d0;
+      --silenda-accent: #c98fa6;
+      --silenda-dark: #8b6f7d;
+      --silenda-light: #fef8f6;
+    }
+    .silenda-booking-trigger {
+      position: fixed;
+      bottom: 30px;
+      right: 30px;
+      width: 60px;
+      height: 60px;
+      background: linear-gradient(135deg, var(--silenda-primary), var(--silenda-accent));
+      border-radius: 50%;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+      cursor: pointer;
+      z-index: 9998;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      transition: all 0.3s ease;
+      animation: silendaPulse 2s infinite;
+    }
+    @keyframes silendaPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .silenda-booking-trigger:hover {
+      transform: scale(1.1) !important;
+    }
+    .silenda-booking-trigger svg {
+      width: 28px;
+      height: 28px;
+      fill: white;
+    }
+    .silenda-widget-popup {
+      position: fixed;
+      bottom: 30px;
+      right: 100px;
+      background: white;
+      padding: 12px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--silenda-dark);
+      white-space: nowrap;
+      z-index: 9997;
+      opacity: 0;
+      transform: translateX(20px);
+      pointer-events: none;
+      transition: all 0.4s ease;
+    }
+    .silenda-widget-popup::after {
+      content: '';
+      position: absolute;
+      right: -8px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 0;
+      height: 0;
+      border-style: solid;
+      border-width: 8px 0 8px 8px;
+      border-color: transparent transparent transparent white;
+    }
+    .silenda-widget-popup.show {
+      opacity: 1;
+      transform: translateX(0);
+    }
+    .silenda-password-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.7);
+      z-index: 10000;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .silenda-password-overlay.active {
+      display: flex;
+    }
+    .silenda-password-box {
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+      max-width: 400px;
+      width: 90%;
+      text-align: center;
+    }
+    .silenda-password-box h3 {
+      color: var(--silenda-dark);
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+    .silenda-password-box input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid var(--silenda-secondary);
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 15px;
+      font-family: inherit;
+    }
+    .silenda-password-box input:focus {
+      outline: none;
+      border-color: var(--silenda-primary);
+    }
+    .silenda-password-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    .silenda-password-btn {
+      flex: 1;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      font-family: inherit;
+    }
+    .silenda-password-btn.submit {
+      background: linear-gradient(135deg, var(--silenda-primary), var(--silenda-accent));
+      color: white;
+    }   .silenda-password-btn.cancel {
+      background: var(--silenda-secondary);
+      color: var(--silenda-dark);
+    } .silenda-password-btn:hover {transform: translateY(-2px);
+    } .silenda-password-error {
+      color: #dc3545;
+      font-size: 14px;
+      margin-top: 10px;
+      display: none;
+    } .silenda-password-error.show {
+      display: block;
+    }  .silenda-booking-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 9999;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      backdrop-filter: blur(4px);
+    }
+    .silenda-booking-overlay.active {
+      display: flex;
+    }
+    .silenda-booking-modal {
+      background: var(--silenda-light);
+      width: 90%;
+      max-width: 900px;
+      max-height: 90vh;
+      border-radius: 20px;
+      box-shadow: 0 10px 50px rgba(0,0,0,0.3);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column; }
+    .silenda-modal-header {
+      background: linear-gradient(135deg, var(--silenda-primary), var(--silenda-accent));
+      padding: 20px 30px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      color: white;
+    }
+    .silenda-modal-header h2 {
+      margin: 0;
+      font-size: 24px;
+      font-weight: 600;
+    }
+    .silenda-close-btn {
+      background: rgba(255, 255, 255, 0.2);
+      border: none;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .silenda-close-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+      transform: rotate(90deg);
+ }
+    .silenda-close-btn svg {
+      width: 20px;
+      height: 20px;
+      fill: white;   }
+    .silenda-modal-body {
+      padding: 30px;
+      overflow-y: auto;
+      flex: 1;  }
+    .silenda-steps {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 30px;
+      padding: 0 20px;  }
+    .silenda-step {
+      flex: 1;
+      text-align: center;
+      position: relative; }
+    .silenda-step::before {
+      content: '';
+      position: absolute;
+      top: 15px;
+      left: 50%;
+      width: 100%;
+      height: 2px;
+      background: var(--silenda-secondary);
+      z-index: -1; }
+    .silenda-step:first-child::before {
+      display: none;
+    }
+    .silenda-step-circle {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      background: var(--silenda-secondary);
+      margin: 0 auto 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 600;
+      color: var(--silenda-dark);
+      transition: all 0.3s ease;
+    }
+    .silenda-step.active .silenda-step-circle {
+      background: var(--silenda-primary);
+      color: white;
+      transform: scale(1.2);
+    }
+    .silenda-step.completed .silenda-step-circle {
+      background: var(--silenda-accent);
+      color: white;
+    }
+    .silenda-step-label {
+      font-size: 13px;
+      color: var(--silenda-dark);
+      font-weight: 500;
+    }
+    .silenda-services-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .silenda-service-card {
+      background: white;
+      border: 2px solid var(--silenda-secondary);
+      border-radius: 12px;
+      padding: 20px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+    }
+    .silenda-service-card:hover {
+      border-color: var(--silenda-primary);
+      transform: translateY(-5px);
+      box-shadow: 0 5px 20px rgba(0,0,0,0.1);
+    }
+    .silenda-service-card.selected {
+      border-color: var(--silenda-primary);
+      background: linear-gradient(135deg, rgba(244, 164, 180, 0.1), rgba(232, 213, 208, 0.1));
+    }
+    .silenda-service-card.selected::after {
+      content: '✓';
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      width: 25px;
+      height: 25px;
+      background: var(--silenda-primary);
+      color: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    .silenda-service-name {
+      font-size: 18px;
+      font-weight: 600;
+      color: var(--silenda-dark);
+      margin-bottom: 10px;
+    }
+    .silenda-service-duration {
+      font-size: 14px;
+      color: var(--silenda-dark);
+      margin: 5px 0;
+    }
+    .silenda-service-price {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--silenda-accent);
+      margin: 10px 0 0 0;
+    }
+    .silenda-service-note {
+      margin-top: 10px;
+      padding: 10px;
+      background: #fff3cd;
+      border-radius: 6px;
+      font-size: 13px;
+      color: #856404;
+      line-height: 1.4;
+    }
+    .silenda-calendar {
+      margin-top: 20px;
+    }
+    .silenda-calendar-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+    }
+    .silenda-month-display {
+      font-size: 20px;
+      font-weight: 600;
+      color: var(--silenda-dark);
+    }
+    .silenda-month-nav {
+      background: var(--silenda-primary);
+      color: white;
+      border: none;
+      width: 35px;
+      height: 35px;
+      border-radius: 50%;
+      cursor: pointer;
+      font-size: 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s ease;
+    }
+    .silenda-month-nav:hover:not(:disabled) {
+      background: var(--silenda-accent);
+      transform: scale(1.1);
+    }
+    .silenda-month-nav:disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+    }
+    .silenda-weekdays {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+      margin-bottom: 10px;
+      text-align: center;
+    }
+    .silenda-weekday {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--silenda-dark);
+      padding: 10px 0;
+    }
+    .silenda-days {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 10px;
+    }
+    .silenda-day {
+      aspect-ratio: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      background: white;
+      border: 2px solid var(--silenda-secondary);
+      color: var(--silenda-dark);
+      font-size: 16px;
+      transition: all 0.2s ease;
+    }
+    .silenda-day:hover:not(.disabled):not(.other-month) {
+      background: var(--silenda-primary);
+      color: white;
+      border-color: var(--silenda-primary);
+      transform: scale(1.05);
+    }
+    .silenda-day.selected {
+      background: var(--silenda-primary);
+      color: white;
+      border-color: var(--silenda-accent);
+    }
+    .silenda-day.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      background: #f5f5f5;
+    }
+    .silenda-day.other-month {
+      opacity: 0.2;
+      cursor: default;
+      border-color: transparent;
+    }
+    .silenda-day.today {
+      border-color: var(--silenda-accent);
+      border-width: 3px;
+    }
+    .silenda-timeslots {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+      gap: 10px;
+      margin-top: 20px;
+    }
+    .silenda-timeslot {
+      background: white;
+      border: 2px solid var(--silenda-secondary);
+      border-radius: 8px;
+      padding: 12px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 15px;
+      color: var(--silenda-dark);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+    .silenda-timeslot:hover:not(.disabled) {
+      background: var(--silenda-primary);
+      color: white;
+      border-color: var(--silenda-primary);
+      transform: translateY(-2px);
+    }
+    .silenda-timeslot.selected {
+      background: var(--silenda-primary);
+      color: white;
+      border-color: var(--silenda-accent);
+    }
+    .silenda-timeslot.disabled {
+      opacity: 0.3;
+      cursor: not-allowed;
+      background: #f5f5f5;
+      position: relative;
+    }
+    .silenda-timeslot.disabled::after {
+      content: '✕';
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: 20px;
+      color: #dc3545;
+    }
+    .silenda-timeslot[title]:hover::before {
+      content: attr(title);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 5px 10px;
+      border-radius: 4px;
+      font-size: 12px;
+      white-space: nowrap;
+      margin-bottom: 5px;
+      z-index: 1000;
+    }
+    .silenda-form-group {
+      margin-bottom: 20px;
+    }
+    .silenda-form-label {
+      display: block;
+      font-weight: 600;
+      color: var(--silenda-dark);
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .silenda-form-input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid var(--silenda-secondary);
+      border-radius: 8px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: all 0.2s ease;
+    }
+    .silenda-form-input:focus {
+      outline: none;
+      border-color: var(--silenda-primary);
+      box-shadow: 0 0 0 3px rgba(244, 164, 180, 0.1);
+    }
+    .silenda-form-textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+    .silenda-checkbox-group {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 20px 0;
+      padding: 15px;
+      background: white;
+      border-radius: 8px;
+      border: 2px solid var(--silenda-secondary);
+    }
+    .silenda-checkbox-group input[type="checkbox"] {
+      margin-top: 3px;
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .silenda-checkbox-group label {
+      cursor: pointer;
+      font-size: 14px;
+      color: var(--silenda-dark);
+      flex: 1;
+      line-height: 1.5;
+    }
+    .silenda-checkbox-group label a {
+      color: var(--silenda-accent);
+      text-decoration: underline;
+    }
+    .silenda-summary {
+      background: white;
+      border-radius: 12px;
+      padding: 25px;
+      border: 2px solid var(--silenda-secondary);
+    }
+    .silenda-summary h3 {
+      margin-top: 0;
+      color: var(--silenda-dark);
+      margin-bottom: 20px;
+      font-size: 20px;
+    }
+    .silenda-summary-item {
+      display: flex;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--silenda-secondary);
+      gap: 20px;
+    }
+    .silenda-summary-item span:first-child {
+      color: var(--silenda-dark);
+      opacity: 0.8;
+    }
+    .silenda-summary-item span:last-child {
+      font-weight: 600;
+      color: var(--silenda-dark);
+      text-align: right;
+    }
+    .silenda-summary-item:last-child {
+      border-bottom: none;
+      font-weight: 700;
+      font-size: 18px;
+      color: var(--silenda-accent);
+      margin-top: 10px;
+      padding-top: 20px;
+      border-top: 2px solid var(--silenda-secondary);
+    }
+    .silenda-btn-group {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+    }
+    .silenda-btn {
+      flex: 1;
+      padding: 15px 30px;
+      border: none;
+      border-radius: 10px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      font-family: inherit;
+      transition: all 0.3s ease;
+    }
+    .silenda-btn-primary {
+      background: linear-gradient(135deg, var(--silenda-primary), var(--silenda-accent));
+      color: white;
+    }
+    .silenda-btn-primary:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(244, 164, 180, 0.4);
+    }
+    .silenda-btn-secondary {
+      background: var(--silenda-secondary);
+      color: var(--silenda-dark);
+    }
+    .silenda-btn-secondary:hover {
+      background: var(--silenda-accent);
+      color: white;
+    }
+    .silenda-btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    .silenda-success {
+      text-align: center;
+      padding: 40px;
+    }
+    .silenda-success-icon {
+      width: 80px;
+      height: 80px;
+      background: var(--silenda-primary);
+      border-radius: 50%;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 40px;
+      color: white;
+      animation: silendaSuccessPop 0.5s ease;
+    }
+    @keyframes silendaSuccessPop {
+      0% { transform: scale(0); }
+      50% { transform: scale(1.1); }
+      100% { transform: scale(1); }
+    }
+    .silenda-success h3 {
+      color: var(--silenda-dark);
+      font-size: 24px;
+      margin-bottom: 15px;
+    }
+    .silenda-success p {
+      color: var(--silenda-dark);
+      opacity: 0.8;
+      line-height: 1.6;
+    }
+    .silenda-info-box {
+      background: #fff3cd;
+      border: 2px solid #ffc107;
+      border-radius: 8px;
+      padding: 15px;
+      margin-top: 20px;
+      font-size: 14px;
+      color: #856404;
+      line-height: 1.5;
+    }
+    .silenda-admin-section {
+      margin-bottom: 30px;
+    }
+    .silenda-admin-section h3 {
+      color: var(--silenda-dark);
+      margin-bottom: 15px;
+      font-size: 18px;
+    }
+    .silenda-day-toggle {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 15px;
+      background: white;
+      border: 2px solid var(--silenda-secondary);
+      border-radius: 8px;
+      margin-bottom: 10px;
+      transition: all 0.2s ease;
+    }
+    .silenda-day-toggle:hover {
+      border-color: var(--silenda-primary);
+    }
+    .silenda-day-toggle label {
+      font-weight: 500;
+      color: var(--silenda-dark);
+      cursor: pointer;
+      flex: 1;
+    }
+    .silenda-day-toggle input[type="checkbox"] {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    .silenda-custom-date-input {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+    .silenda-custom-date-input input[type="date"] {
+      flex: 1;
+      padding: 10px;
+      border: 2px solid var(--silenda-secondary);
+      border-radius: 8px;
+      font-family: inherit;
+    }
+    .silenda-custom-date-input button {
+      padding: 10px 20px;
+      background: var(--silenda-primary);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.2s ease;
+    }
+    .silenda-custom-date-input button:hover {
+      background: var(--silenda-accent);
+    }
+    .silenda-blocked-dates-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    .silenda-blocked-date-tag {
+      background: white;
+      border: 2px solid var(--silenda-secondary);
+      border-radius: 8px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 14px;
+    }
+    .silenda-blocked-date-tag button {
+      background: var(--silenda-accent);
+      color: white;
+      border: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      transition: all 0.2s ease;
+    }
+    .silenda-blocked-date-tag button:hover {
+      background: var(--silenda-dark);
+    }
+    .silenda-save-message {
+      background: #d4edda;
+      border: 2px solid #28a745;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 20px;
+      text-align: center;
+      color: #155724;
+      font-weight: 600;
+      display: none;
+    }
+    .silenda-save-message.show {
+      display: block;
+      animation: fadeInOut 3s ease;
+    }
+    @keyframes fadeInOut {
+      0%, 100% { opacity: 0; }
+      10%, 90% { opacity: 1; }
+    }
+    @media (max-width: 768px) {
+      .silenda-services-grid { grid-template-columns: 1fr; }
+      .silenda-booking-trigger { bottom: 20px; right: 20px; width: 55px; height: 55px; }
+      .silenda-booking-trigger svg { width: 24px; height: 24px; }
+      .silenda-widget-popup { right: 85px; font-size: 13px; padding: 10px 15px; }
+      .silenda-modal-body { padding: 20px; }
+      .silenda-steps { padding: 0 10px; }
+      .silenda-step-label { font-size: 11px; }
+      .silenda-password-box { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+  <button class="silenda-booking-trigger" id="silendaTrigger">
+    <svg viewBox="0 0 24 24">
+      <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zM9 14H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2zm-8 4H7v-2h2v2zm4 0h-2v-2h2v2zm4 0h-2v-2h2v2z"/>
+    </svg>
+  </button>
+  <div class="silenda-widget-popup" id="silendaWidgetPopup">Plan hier je afspraak!</div>
+  <div class="silenda-password-overlay" id="silendaPasswordOverlay">
+    <div class="silenda-password-box">
+      <h3>Admin Toegang</h3>
+      <p style="color: var(--silenda-dark); margin-bottom: 15px; font-size: 14px;">
+        Voer de toegangscode in om het rooster te beheren:
+      </p>
+      <input type="password" id="silendaPasswordInput" placeholder="Toegangscode">
+      <div class="silenda-password-error" id="silendaPasswordError">Onjuiste toegangscode</div>
+      <div class="silenda-password-buttons">
+        <button class="silenda-password-btn cancel" id="silendaPasswordCancel">Annuleren</button>
+        <button class="silenda-password-btn submit" id="silendaPasswordSubmit">Toegang</button>
+      </div>
+    </div>
+  </div>
+  <div class="silenda-booking-overlay" id="silendaAdminOverlay">
+    <div class="silenda-booking-modal">
+      <div class="silenda-modal-header">
+        <h2>Rooster Beheren</h2>
+        <button class="silenda-close-btn" id="silendaAdminCloseBtn">
+          <svg viewBox="0 0 24 24">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="silenda-modal-body">
+        <div class="silenda-admin-section">
+          <h3>Werkdagen instellen</h3>
+          <p style="color: var(--silenda-dark); margin-bottom: 15px; font-size: 14px;">
+            Vink de dagen aan waarop je <strong>beschikbaar</strong> bent voor afspraken:
+          </p>
+          <div class="silenda-day-toggle">
+            <label for="adminMonday">Maandag</label>
+            <input type="checkbox" id="adminMonday" checked>
+          </div>
+          <div class="silenda-day-toggle">
+            <label for="adminTuesday">Dinsdag</label>
+            <input type="checkbox" id="adminTuesday" checked>
+          </div>
+          <div class="silenda-day-toggle">
+            <label for="adminWednesday">Woensdag</label>
+            <input type="checkbox" id="adminWednesday">
+          </div>
+          <div class="silenda-day-toggle">
+            <label for="adminThursday">Donderdag</label>
+            <input type="checkbox" id="adminThursday" checked>
+          </div>
+          <div class="silenda-day-toggle">
+            <label for="adminFriday">Vrijdag</label>
+            <input type="checkbox" id="adminFriday" checked>
+          </div>
+          <div class="silenda-day-toggle">
+            <label for="adminSaturday">Zaterdag</label>
+            <input type="checkbox" id="adminSaturday">
+          </div>
+          <div class="silenda-day-toggle">
+            <label for="adminSunday">Zondag</label>
+            <input type="checkbox" id="adminSunday">
+          </div>
+        </div>
+        <div class="silenda-admin-section">
+          <h3>Extra vrije dagen toevoegen</h3>
+          <p style="color: var(--silenda-dark); margin-bottom: 15px; font-size: 14px;">
+            Voeg specifieke datums toe waarop je niet beschikbaar bent:
+          </p>
+          <div class="silenda-custom-date-input">
+            <input type="date" id="adminBlockedDate">
+            <button id="adminAddBlockedDate">Toevoegen</button>
+          </div>
+          <div class="silenda-blocked-dates-list" id="adminBlockedDatesList"></div>
+        </div>
+        <div class="silenda-btn-group">
+          <button class="silenda-btn silenda-btn-primary" id="adminSaveBtn">Opslaan</button>
+        </div>
+        <div class="silenda-save-message" id="adminSaveMessage">Rooster succesvol opgeslagen!</div>
+      </div>
+    </div>
+  </div>
+  <div class="silenda-booking-overlay" id="silendaOverlay">
+    <div class="silenda-booking-modal">
+      <div class="silenda-modal-header">
+        <h2>Afspraak maken bij Silenda</h2>
+        <button class="silenda-close-btn" id="silendaCloseBtn">
+          <svg viewBox="0 0 24 24">
+            <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/>
+          </svg>
+        </button>
+      </div>
+      <div class="silenda-modal-body">
+        <div class="silenda-steps">
+          <div class="silenda-step active">
+            <div class="silenda-step-circle">1</div>
+            <div class="silenda-step-label">Gesprek</div>
+          </div>
+          <div class="silenda-step">
+            <div class="silenda-step-circle">2</div>
+            <div class="silenda-step-label">Datum & Tijd</div>
+          </div>
+          <div class="silenda-step">
+            <div class="silenda-step-circle">3</div>
+            <div class="silenda-step-label">Gegevens</div>
+          </div>
+          <div class="silenda-step">
+            <div class="silenda-step-circle">4</div>
+            <div class="silenda-step-label">Betaling</div>
+          </div>
+        </div>
+        <div id="silendaContent"></div>
+        <div class="silenda-btn-group">
+          <button class="silenda-btn silenda-btn-secondary" id="silendaBackBtn" style="display:none">Terug</button>
+          <button class="silenda-btn silenda-btn-primary" id="silendaNextBtn" disabled>Volgende</button>
+        </div>
+      </div>
+    </div>
+  </div>
+  <script>
+  (function() {
+    'use strict';
+    // JE EMAILJS GEGEVENS - AL INGEVULD!
+    const EMAILJS_PUBLIC_KEY = "sh1cSSan5VAzDmHAZ";
+    const EMAILJS_SERVICE_ID = "service_djwxgvn";
+    const EMAILJS_CUSTOMER_TEMPLATE_ID = "template_92adb19";
+    const EMAILJS_ADMIN_TEMPLATE_ID = "template_9uvj34u";
+
+    // GOOGLE SHEETS WEB APP URL
+    const GOOGLE_SHEETS_URL = "https://script.google.com/macros/s/AKfycbyzU1Ihb_-jkUYAmX5oRlmAtbSs9GlZsviUHEgI-jCDyrrAbp0wbU7wnJXPkGKP-q1Y/exec";
+    // MOLLIE BETAALLINKS
+    const MOLLIE_LINKS = {
+      2: 'https://payment-links.mollie.com/payment/YwR7fRhdb9LruYLuwrmwG', // Gesprek telefonisch of via Zoom
+      3: 'https://payment-links.mollie.com/payment/9AdN5GLi5xUjMNUzuTTFd'  // Gesprek op live locatie
+    };
+ const SECRET_TRIGGER = 'theo';
+    const SECRET_PASSWORD = 'mama123';
+    const CONFIG = {
+      businessEmail: 'Info.silenda@gmail.com',
+      minAdvanceHours: 48,
+      monthsAhead: 3,
+      termsUrl: 'https://cdn.shopify.com/s/files/1/0914/8973/0943/files/Silenda_algemene_voorwaarden.pdf?v=1763975253',
+      services: [
+        { id: 1, name: 'Kennismaken telefonisch of via Zoom', duration: 20, breakAfter: 40, price: 0, shopifyId: '12345' },
+        { id: 2, name: 'Gesprek telefonisch of via Zoom', duration: 60, breakAfter: 60, price: 58, shopifyId: '12346' },
+        { id: 3, name: 'Gesprek op live locatie', duration: 90, breakAfter: 90, price: 98, shopifyId: '12347', note: 'Deze optie is alleen te boeken in overleg met Silenda' }
+      ],
+      workHours: { start: '09:00', end: '17:30', slotInterval: 30 }
+    };
+
+    let scheduleSettings = {
+      workingDays: { 0: false, 1: true, 2: true, 3: false, 4: true, 5: true, 6: false },
+      blockedDates: []
+    };
+
+    function loadScheduleSettings() {
+      try {
+        const saved = localStorage.getItem('silendaScheduleSettings');
+        if (saved) scheduleSettings = JSON.parse(saved);
+      } catch (e) { console.log('Could not load schedule settings'); }
+    }
+    function saveScheduleSettings() {
+      try { localStorage.setItem('silendaScheduleSettings', JSON.stringify(scheduleSettings)); }
+      catch (e) { console.log('Could not save schedule settings'); }
+    }
+    loadScheduleSettings();
+
+    let app = {
+      step: 1,
+      service: null,
+      date: null,
+      time: null,
+      currentMonth: new Date(),
+      customer: {},
+      agreedToTerms: false,
+      bookedSlots: [],
+      blockedSlots: []
+    };
+   
+    const el = {
+      trigger: document.getElementById('silendaTrigger'),
+      overlay: document.getElementById('silendaOverlay'),
+      close: document.getElementById('silendaCloseBtn'),
+      back: document.getElementById('silendaBackBtn'),
+      next: document.getElementById('silendaNextBtn'),
+      content: document.getElementById('silendaContent'),
+      widgetPopup: document.getElementById('silendaWidgetPopup'),
+      passwordOverlay: document.getElementById('silendaPasswordOverlay'),
+      passwordInput: document.getElementById('silendaPasswordInput'),
+      passwordSubmit: document.getElementById('silendaPasswordSubmit'),
+      passwordCancel: document.getElementById('silendaPasswordCancel'),
+      passwordError: document.getElementById('silendaPasswordError'),
+      adminOverlay: document.getElementById('silendaAdminOverlay'),
+      adminClose: document.getElementById('silendaAdminCloseBtn')
+    };
+
+    // EmailJS initialiseren
+    emailjs.init(EMAILJS_PUBLIC_KEY);
+
+    // === ADMIN TOEGANG ===
+    let typedKeys = '', typingTimeout;
+document.addEventListener('keypress', (e) => {
+   clearTimeout(typingTimeout);
+      typedKeys += e.key.toLowerCase();
+      if (typedKeys.includes(SECRET_TRIGGER)) { typedKeys = ''; showPasswordPrompt(); }
+      typingTimeout = setTimeout(() => typedKeys = '', 2000);
+    });
+    function showPasswordPrompt() {
+el.passwordOverlay.classList.add('active');
+      el.passwordInput.value = '';
+el.passwordError.classList.remove('show');
+      el.passwordInput.focus();
+    }
+    function hidePasswordPrompt() { el.passwordOverlay.classList.remove('active'); }
+    function checkPassword() {
+      if (el.passwordInput.value === SECRET_PASSWORD) { hidePasswordPrompt(); openAdminPanel(); }
+      else { el.passwordError.classList.add('show'); el.passwordInput.value = ''; el.passwordInput.focus(); }
+    }
+    el.passwordSubmit.onclick = checkPassword;
+    el.passwordCancel.onclick = hidePasswordPrompt;
+el.passwordInput.addEventListener('keypress', e => { if (e.key === 'Enter') checkPassword(); });
+    el.passwordOverlay.onclick = e => { if (e.target === el.passwordOverlay) hidePasswordPrompt(); };
+  el.adminClose.onclick = e => { e.preventDefault(); closeAdminPanel(); };
+    el.adminOverlay.onclick = e => { if (e.target === el.adminOverlay) closeAdminPanel(); };
+    function openAdminPanel() { el.adminOverlay.classList.add('active'); document.body.style.overflow = 'hidden'; loadAdminSettings(); }
+    function closeAdminPanel() { el.adminOverlay.classList.remove('active'); document.body.style.overflow = ''; }
+    function loadAdminSettings() {
+document.getElementById('adminMonday').checked = scheduleSettings.workingDays[1];
+document.getElementById('adminTuesday').checked = scheduleSettings.workingDays[2];
+document.getElementById('adminWednesday').checked = scheduleSettings.workingDays[3];
+document.getElementById('adminThursday').checked = scheduleSettings.workingDays[4];
+document.getElementById('adminFriday').checked = scheduleSettings.workingDays[5];
+document.getElementById('adminSaturday').checked = scheduleSettings.workingDays[6];
+document.getElementById('adminSunday').checked = scheduleSettings.workingDays[0];
+      renderBlockedDates();
+    }
+    function renderBlockedDates() {
+      const container = document.getElementById('adminBlockedDatesList');
+      if (scheduleSettings.blockedDates.length === 0) {
+        container.innerHTML = '<p style="color: var(--silenda-dark); opacity: 0.6; font-size: 14px;">Geen extra vrije dagen ingesteld</p>';
+        return;
+      }
+      let html = '';
+scheduleSettings.blockedDates.forEach(date => {
+        html += <div class="silenda-blocked-date-tag"><span>${formatDate(date)}</span><button onclick="window.silendaRemoveBlockedDate('${date}')">×</button></div>;
+      });
+      container.innerHTML = html;
+    }
+window.silendaRemoveBlockedDate = date => {
+  scheduleSettings.blockedDates = scheduleSettings.blockedDates.filter(d => d !== date);
+      renderBlockedDates();
+    };
+document.getElementById('adminAddBlockedDate').onclick = () => {
+      const date = document.getElementById('adminBlockedDate').value;
+      if (!date) { alert('Selecteer een datum'); return; }
+      if (scheduleSettings.blockedDates.includes(date)) { alert('Datum al toegevoegd'); return; }
+scheduleSettings.blockedDates.push(date); scheduleSettings.blockedDates.sort(); renderBlockedDates();
+document.getElementById('adminBlockedDate').value = '';
+    };
+document.getElementById('adminSaveBtn').onclick = () => {
+scheduleSettings.workingDays[1] = document.getElementById('adminMonday').checked;
+scheduleSettings.workingDays[2] = document.getElementById('adminTuesday').checked;
+scheduleSettings.workingDays[3] = document.getElementById('adminWednesday').checked;
+scheduleSettings.workingDays[4] = document.getElementById('adminThursday').checked;
+scheduleSettings.workingDays[5] = document.getElementById('adminFriday').checked;
+scheduleSettings.workingDays[6] = document.getElementById('adminSaturday').checked;
+scheduleSettings.workingDays[0] = document.getElementById('adminSunday').checked;
+      saveScheduleSettings();
+      const msg = document.getElementById('adminSaveMessage');
+     msg.classList.add('show');
+      setTimeout(() => msg.classList.remove('show'), 3000);
+    };
+    // === WIDGET POPUP ANIMATIE ===
+    function startPopupAnimation() {
+      setInterval(() => {
+        el.widgetPopup.classList.add('show');
+        setTimeout(() => el.widgetPopup.classList.remove('show'), 3000);
+      }, 10000);
+    }
+    startPopupAnimation();
+    // === BOOKING MODAL ===
+    el.trigger.onclick = e => { e.preventDefault(); openModal(); };
+    el.close.onclick = e => { e.preventDefault(); closeModal(); };
+    el.overlay.onclick = e => { if (e.target === el.overlay) closeModal(); };
+    el.back.onclick = e => { e.preventDefault(); if (app.step > 1) { app.step--; render(); } };
+    el.next.onclick = e => { e.preventDefault(); if (app.step < 4) { app.step++; render(); } else processBooking(); };
+  function openModal() {
+el.overlay.classList.add('active');
+   document.body.style.overflow = 'hidden';
+      loadBookedSlots();
+      render();
+    }
+    function closeModal() { el.overlay.classList.remove('active'); document.body.style.overflow = ''; }
+   function getMinDate() { const d = new Date(); d.setHours(d.getHours() + CONFIG.minAdvanceHours); return d; }
+    function getMaxDate() { const d = new Date(); d.setMonth(d.getMonth() + CONFIG.monthsAhead); return d; }
+    function isDateAvailable(date) {
+      const min = getMinDate(), max = getMaxDate(), check = new Date(date + 'T00:00:00');
+      if (check < min || check > max) return false;
+      if (scheduleSettings.blockedDates.includes(date)) return false;
+      return scheduleSettings.workingDays[check.getDay()];
+    }
+    function formatDate(dateStr) {
+      const d = new Date(dateStr + 'T00:00:00');
+      const days = ['zondag','maandag','dinsdag','woensdag','donderdag','vrijdag','zaterdag'];
+      const months = ['januari','februari','maart','april','mei','juni','juli','augustus','september','oktober','november','december'];
+      return ${days[d.getDay()]} ${d.getDate()} ${months[d.getMonth()]} ${d.getFullYear()};
+    }
+    function generateTimeSlots() {
+      const slots = [], [sh, sm] = CONFIG.workHours.start.split(':').map(Number), [eh, em] = CONFIG.workHours.end.split(':').map(Number);
+      let cur = sh * 60 + sm, end = eh * 60 + em;
+      while (cur < end) { const h = Math.floor(cur/60), m = cur%60; slots.push(${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}); cur += CONFIG.workHours.slotInterval; }
+      return slots;
+    }
+       function isTimeSlotAvailable(date, time) {
+      if (!app.service) return false;
+          const isBlocked = app.blockedSlots.some(blocked =>
+        blocked.date === date && blocked.time === time
+      );
+         if (isBlocked) return false;
+        const [h, m] = time.split(':').map(Number);
+      const slotMin = h * 60 + m;
+      const total = app.service.duration + app.service.breakAfter;
+      const [eh, em] = CONFIG.workHours.end.split(':').map(Number);
+      const workEnd = eh * 60 + em;
+       if (slotMin + total > workEnd) return false;
+          let check = slotMin;
+      while (check < slotMin + total) {
+        const ch = Math.floor(check / 60);
+        const cm = check % 60;
+        const checkStr = ${String(ch).padStart(2,'0')}:${String(cm).padStart(2,'0')};
+           const isCheckBlocked = app.blockedSlots.some(blocked =>
+          blocked.date === date && blocked.time === checkStr
+        );
+           if (isCheckBlocked) return false;
+              check += CONFIG.workHours.slotInterval;
+      }
+          return true;
+    }
+        function loadBookedSlots() {
+      fetch(GOOGLE_SHEETS_URL)
+        .then(response => response.json())
+        .then(data => {
+          if (data.blockedSlots) {
+            app.blockedSlots = data.blockedSlots;
+          }
+          console.log('Blocked slots loaded:', app.blockedSlots.length);
+        })
+        .catch(err => {
+          console.error('Error loading booked slots:', err);
+          app.blockedSlots = [];
+        });
+    }
+    function render() {
+      updateSteps(); updateButtons();
+      if (app.step === 1) renderServices();
+      if (app.step === 2) renderCalendar();
+      if (app.step === 3) renderForm();
+      if (app.step === 4) renderSummary();
+    }
+    function updateSteps() {
+document.querySelectorAll('.silenda-step').forEach((s, i) => {
+   s.classList.remove('active', 'completed');
+        if (i + 1 === app.step) s.classList.add('active');
+        if (i + 1 < app.step) s.classList.add('completed');
+      });
+    }
+    function updateButtons() {
+      el.back.style.display = app.step > 1 ? 'block' : 'none';
+      let ok = false;
+      if (app.step === 1) ok = !!app.service;
+      if (app.step === 2) ok = !!(app.date && app.time);
+      if (app.step === 3) ok = !!(app.customer.firstName && app.customer.lastName && app.customer.email);
+      if (app.step === 4) ok = app.agreedToTerms;
+      el.next.disabled = !ok;
+      el.next.textContent = app.step === 4 ? 'Betalen met iDEAL' : 'Volgende';
+    }
+    function renderServices() {
+      let h = '<div class="silenda-services-grid">';
+      CONFIG.services.forEach(s => {
+        const sel = app.service && app.service.id === s.id ? 'selected' : '';
+        h += `<div class="silenda-service-card ${sel}" data-id="${s.id}">
+          <div class="silenda-service-name">${s.name}</div>
+          <div class="silenda-service-duration">⏱️ ${s.duration} minuten</div>
+          <div class="silenda-service-price">€${s.price.toFixed(2)}</div>
+          ${s.note ? <div class="silenda-service-note">${s.note}</div> : ''}
+        </div>`;
+      });
+      h += '</div>';
+      el.content.innerHTML = h;
+      document.querySelectorAll('.silenda-service-card').forEach(c => {
+        c.onclick = () => { app.service = CONFIG.services.find(s => s.id == c.dataset.id); app.date = null; app.time = null; render(); };
+      });
+    }
+    function renderCalendar() {
+      const year = app.currentMonth.getFullYear(), month = app.currentMonth.getMonth();
+      const monthNames = ['Januari','Februari','Maart','April','Mei','Juni','Juli','Augustus','September','Oktober','November','December'];
+      const firstDay = new Date(year, month, 1), lastDay = new Date(year, month + 1, 0), prevLastDay = new Date(year, month, 0);
+      const firstDayOfWeek = firstDay.getDay(), daysInMonth = lastDay.getDate(), daysInPrevMonth = prevLastDay.getDate();
+      const today = new Date(); today.setHours(0,0,0,0);
+      let h = `<div class="silenda-calendar">
+        <div class="silenda-calendar-header">
+          <button class="silenda-month-nav" id="silendaPrevMonth">‹</button>
+          <div class="silenda-month-display">${monthNames[month]} ${year}</div>
+          <button class="silenda-month-nav" id="silendaNextMonth">›</button>
+        </div>
+        <div class="silenda-weekdays">
+          <div class="silenda-weekday">Zo</div><div class="silenda-weekday">Ma</div><div class="silenda-weekday">Di</div>
+          <div class="silenda-weekday">Wo</div><div class="silenda-weekday">Do</div><div class="silenda-weekday">Vr</div><div class="silenda-weekday">Za</div>
+        </div>
+        <div class="silenda-days">`;
+      for (let i = firstDayOfWeek - 1; i >= 0; i--) h += <div class="silenda-day other-month">${daysInPrevMonth - i}</div>;
+      for (let i = 1; i <= daysInMonth; i++) {
+        const dateStr = ${year}-${String(month + 1).padStart(2,'0')}-${String(i).padStart(2,'0')};
+        const checkDate = new Date(year, month, i), isToday = checkDate.getTime() === today.getTime();
+        const available = isDateAvailable(dateStr), sel = app.date === dateStr;
+        let classes = 'silenda-day';
+        if (!available) classes += ' disabled';
+        if (isToday) classes += ' today';
+        if (sel) classes += ' selected';
+        h += <div class="${classes}" data-date="${dateStr}">${i}</div>;
+      }
+      const totalCells = firstDayOfWeek + daysInMonth, remaining = totalCells % 7 === 0 ? 0 : 7 - (totalCells % 7);
+      for (let i = 1; i <= remaining; i++) h += <div class="silenda-day other-month">${i}</div>;
+      h += '</div></div>';
+  if (app.date) {
+        h += '<div class="silenda-timeslots">';
+        generateTimeSlots().forEach(t => {
+          const available = isTimeSlotAvailable(app.date, t);
+        const sel = app.time === t;
+          let classes = 'silenda-timeslot';
+          let title = '';
+         
+          if (!available) {
+            classes += ' disabled';
+            const blockedInfo = app.blockedSlots.find(blocked =>
+              blocked.date === app.date && blocked.time === t
+            );
+            if (blockedInfo) {
+              title = blockedInfo.reason === 'Pauze' ? 'Pauzetijd' : 'Al geboekt';
+            } else {
+              title = 'Niet beschikbaar';
+            }
+          }
+          if (sel) classes += ' selected';
+                    h += <div class="${classes}" data-time="${t}" ${title ? `title="${title}" : ''}>${t}</div>`;
+        });
+        h += '</div>';
+      }
+ el.content.innerHTML = h;
+document.getElementById('silendaPrevMonth')?.addEventListener('click', e => {
+        e.preventDefault();
+        const newMonth = new Date(app.currentMonth); newMonth.setMonth(newMonth.getMonth() - 1);
+        if (newMonth >= new Date(getMinDate().getFullYear(), getMinDate().getMonth(), 1)) { app.currentMonth = newMonth; render(); }
+      });
+document.getElementById('silendaNextMonth')?.addEventListener('click', e => {
+        e.preventDefault();
+        const newMonth = new Date(app.currentMonth); newMonth.setMonth(newMonth.getMonth() + 1);
+        if (newMonth <= getMaxDate()) { app.currentMonth = newMonth; render(); }
+      });
+document.querySelectorAll('.silenda-day:not(.disabled):not(.other-month)').forEach(d => {
+        d.onclick = () => { app.date = d.dataset.date; app.time = null; render(); };
+      });
+      if (app.date) {
+document.querySelectorAll('.silenda-timeslot:not(.disabled)').forEach(t => {
+          t.onclick = () => { app.time = t.dataset.time; render(); };
+        });
+      }
+    }
+   function renderForm() {
+      el.content.innerHTML = `
+        <div class="silenda-form-group">
+          <label class="silenda-form-label">Voornaam *</label>
+          <input type="text" class="silenda-form-input" id="silendaFirstName" value="${app.customer.firstName || ''}" placeholder="bijv. Maria">
+        </div>
+        <div class="silenda-form-group">
+          <label class="silenda-form-label">Achternaam *</label>
+          <input type="text" class="silenda-form-input" id="silendaLastName" value="${app.customer.lastName || ''}" placeholder="bijv. Jansen">
+        </div>
+        <div class="silenda-form-group">
+          <label class="silenda-form-label">E-mail *</label>
+          <input type="email" class="silenda-form-input" id="silendaEmail" value="${app.customer.email || ''}" placeholder="maria@example.com">
+        </div>
+        <div class="silenda-form-group">
+          <label class="silenda-form-label">Telefoon</label>
+          <input type="tel" class="silenda-form-input" id="silendaPhone" value="${app.customer.phone || ''}" placeholder="06 12345678">
+        </div>
+        <div class="silenda-form-group">
+          <label class="silenda-form-label">Opmerkingen</label>
+          <textarea class="silenda-form-input silenda-form-textarea" id="silendaNotes" placeholder="Bijv: specifieke wensen...">${app.customer.notes || ''}</textarea>
+        </div>`;
+document.getElementById('silendaFirstName').oninput = e => { app.customer.firstName = e.target.value; updateButtons(); };
+document.getElementById('silendaLastName').oninput = e => { app.customer.lastName = e.target.value; updateButtons(); };
+document.getElementById('silendaEmail').oninput = e => { app.customer.email = e.target.value; updateButtons(); };
+      document.getElementById('silendaPhone').oninput = e => { app.customer.phone = e.target.value; };
+      document.getElementById('silendaNotes').oninput = e => { app.customer.notes = e.target.value; };
+    }
+      function renderSummary() {
+      el.content.innerHTML = `
+        <div class="silenda-summary">
+          <h3>Overzicht van je afspraak</h3>
+          <div class="silenda-summary-item"><span>Gesprek:</span><span>${app.service.name}</span></div>
+          <div class="silenda-summary-item"><span>Datum:</span><span>${formatDate(app.date)}</span></div>
+          <div class="silenda-summary-item"><span>Tijd:</span><span>${app.time} uur</span></div>
+          <div class="silenda-summary-item"><span>Duur:</span><span>${app.service.duration} minuten</span></div>
+          <div class="silenda-summary-item"><span>Naam:</span><span>${app.customer.firstName} ${app.customer.lastName}</span></div>
+          <div class="silenda-summary-item"><span>Email:</span><span>${app.customer.email}</span></div>
+          <div class="silenda-summary-item"><span>Totaal te betalen:</span><span>€${app.service.price.toFixed(2)}</span></div>
+        </div>
+        <div class="silenda-checkbox-group">
+          <input type="checkbox" id="silendaTerms" ${app.agreedToTerms ? 'checked' : ''}>
+          <label for="silendaTerms">Ik ga akkoord met de <a href="${CONFIG.termsUrl}" target="_blank">algemene voorwaarden</a> van Silenda *</label>
+        </div>
+        <div class="silenda-info-box">
+          Na succesvolle betaling ontvang je een bevestiging per email. Ook krijg je 24 uur van tevoren een herinneringsmail.
+        </div>`;
+document.getElementById('silendaTerms').onchange = function() { app.agreedToTerms = this.checked; updateButtons(); };
+    }
+        function processBooking() {
+      el.next.disabled = true;
+      el.next.textContent = 'Bezig met verwerken...';
+            const bookingData = {
+        service: app.service.name,
+        serviceId: app.service.id,
+        duration: app.service.duration,
+        price: app.service.price,
+        date: app.date,
+        time: app.time,
+        name: ${app.customer.firstName} ${app.customer.lastName},
+        email: app.customer.email,
+        phone: app.customer.phone || '',
+        notes: app.customer.notes || '',
+        timestamp: new Date().toISOString()
+      };
+           // Eerst data opslaan
+saveBookingToSheets(bookingData);
+          // Dan emails versturen
+      sendConfirmationEmails(bookingData);
+       // Voor gratis kennismakingsgesprek: toon succes zonder betaling
+      if (app.service.id === 1) {
+        showSuccess();
+        return;
+      }
+           // Voor betaalde diensten: redirect naar Mollie
+      const mollieLink = MOLLIE_LINKS[app.service.id];
+      if (mollieLink) {
+        setTimeout(() => {
+          window.location.href = mollieLink;
+        }, 1000);
+      } else {
+        console.error('Geen Mollie-link gevonden voor service ID:', app.service.id);
+        showSuccess();
+      }
+    }
+      function saveBookingToSheets(bookingData) {
+      fetch(GOOGLE_SHEETS_URL, {
+        method: 'POST',
+        mode: 'no-cors',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(bookingData)
+      })
+      .then(() => {
+        console.log('Booking data sent to Google Sheets');
+      })
+      .catch(err => {
+        console.error('Error sending to Google Sheets:', err);
+      });
+    }
+        function sendConfirmationEmails(bookingData) {
+      emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_CUSTOMER_TEMPLATE_ID, {
+        to_name: bookingData.name,
+        reply_to: bookingData.email,
+        customer_email: bookingData.email,
+        service_name: bookingData.service,
+        appointment_date: formatDate(bookingData.date),
+        appointment_time: bookingData.time,
+        duration: ${bookingData.duration} minuten,
+        price: €${bookingData.price.toFixed(2)},      business_email: CONFIG.businessEmail
+      }).then(() => console.log('Bevestigingsmail naar klant verzonden'))
+        .catch(err => console.error('Fout bij klantmail:', err));
+emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_ADMIN_TEMPLATE_ID, {
+        reply_to: CONFIG.businessEmail,
+        customer_name: bookingData.name,
+        customer_email: bookingData.email,
+        customer_phone: bookingData.phone || "Niet opgegeven",
+        service_name: bookingData.service,
+        appointment_date: formatDate(bookingData.date),
+        appointment_time: bookingData.time,
+        duration: ${bookingData.duration} minuten,
+        price: €${bookingData.price.toFixed(2)},     notes: bookingData.notes || "Geen opmerkingen"
+      }).then(() => console.log('Melding naar Silenda verzonden'))
+        .catch(err => console.error('Fout bij admin mail:', err));
+    }
+        function showSuccess() {
+      el.content.innerHTML = `
+        <div class="silenda-success">
+          <div class="silenda-success-icon">✓</div>
+          <h3>Betaling voltooid!</h3>
+          <p>Je afspraak bij Silenda is bevestigd!<br><br>
+          Je ontvangt binnen enkele minuten een bevestigingsmail op <strong>${app.customer.email}</strong><br><br>
+          We kijken ernaar uit je te verwelkomen!</p>
+        </div>`;
+      el.back.style.display = 'none';
+      el.next.textContent = 'Sluiten';
+      el.next.disabled = false;
+      el.next.onclick = e => { e.preventDefault(); closeModal(); resetApp(); };
+    }
+       function resetApp() {
+      app = {
+        step: 1,
+        service: null,
+        date: null,
+        time: null,
+        currentMonth: new Date(),
+        customer: {},
+        agreedToTerms: false,
+        bookedSlots: app.bookedSlots,
+        blockedSlots: app.blockedSlots
+      };
+      el.next.onclick = e => { e.preventDefault(); if (app.step < 4) { app.step++; render(); } else processBooking(); };
+    }    console.log('Silenda Booking Widget geladen! Typ "' + SECRET_TRIGGER + '" voor admin toegang.');
+  })();
+  </script>
+</body>
+</html>
